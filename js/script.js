@@ -10,7 +10,7 @@
  */
 
 const todos = [];
-const RENDER_EVENT = 'render-todo';
+const RENDER_EVENT = "render-todo";
 
 function generateId() {
   return +new Date();
@@ -21,8 +21,8 @@ function generateTodoObject(id, task, timestamp, isCompleted) {
     id,
     task,
     timestamp,
-    isCompleted
-  }
+    isCompleted,
+  };
 }
 
 function findTodo(todoId) {
@@ -44,42 +44,41 @@ function findTodoIndex(todoId) {
 }
 
 function makeTodo(todoObject) {
-  const {id, task, timestamp, isCompleted} = todoObject;
+  const { id, task, timestamp, isCompleted } = todoObject;
 
-  const textTitle = document.createElement('h2');
+  const textTitle = document.createElement("h2");
   textTitle.innerText = task;
 
-  const textTimestamp = document.createElement('p');
+  const textTimestamp = document.createElement("p");
   textTimestamp.innerText = timestamp;
 
-  const textContainer = document.createElement('div');
-  textContainer.classList.add('inner');
+  const textContainer = document.createElement("div");
+  textContainer.classList.add("inner");
   textContainer.append(textTitle, textTimestamp);
 
-  const container = document.createElement('div');
-  container.classList.add('item', 'shadow');
+  const container = document.createElement("div");
+  container.classList.add("item", "shadow");
   container.append(textContainer);
-  container.setAttribute('id', `todo-${id}`);
+  container.setAttribute("id", `todo-${id}`);
 
   if (isCompleted) {
-    const undoButton = document.createElement('button');
-    undoButton.classList.add('undo-button');
-    undoButton.addEventListener('click', function () {
+    const undoButton = document.createElement("button");
+    undoButton.classList.add("undo-button");
+    undoButton.addEventListener("click", function () {
       undoTaskFromCompleted(id);
     });
 
-    const trashButton = document.createElement('button');
-    trashButton.classList.add('trash-button');
-    trashButton.addEventListener('click', function () {
+    const trashButton = document.createElement("button");
+    trashButton.classList.add("trash-button");
+    trashButton.addEventListener("click", function () {
       removeTaskFromCompleted(id);
     });
 
     container.append(undoButton, trashButton);
-
   } else {
-    const checkButton = document.createElement('button');
-    checkButton.classList.add('check-button');
-    checkButton.addEventListener('click', function () {
+    const checkButton = document.createElement("button");
+    checkButton.classList.add("check-button");
+    checkButton.addEventListener("click", function () {
       addTaskToCompleted(id);
     });
 
@@ -90,14 +89,15 @@ function makeTodo(todoObject) {
 }
 
 function addTodo() {
-  const textTodo = document.getElementById('title').value;
-  const timestamp = document.getElementById('date').value;
+  const textTodo = document.getElementById("title").value;
+  const timestamp = document.getElementById("date").value;
 
   const generatedID = generateId();
   const todoObject = generateTodoObject(generatedID, textTodo, timestamp, false);
   todos.push(todoObject);
 
   document.dispatchEvent(new Event(RENDER_EVENT));
+  saveData();
 }
 
 function addTaskToCompleted(todoId /* HTMLELement */) {
@@ -106,6 +106,7 @@ function addTaskToCompleted(todoId /* HTMLELement */) {
 
   todoTarget.isCompleted = true;
   document.dispatchEvent(new Event(RENDER_EVENT));
+  saveData();
 }
 
 function removeTaskFromCompleted(todoId /* HTMLELement */) {
@@ -114,6 +115,7 @@ function removeTaskFromCompleted(todoId /* HTMLELement */) {
   todos.splice(todoTarget, 1);
 
   document.dispatchEvent(new Event(RENDER_EVENT));
+  saveData();
 }
 
 function undoTaskFromCompleted(todoId /* HTMLELement */) {
@@ -122,25 +124,25 @@ function undoTaskFromCompleted(todoId /* HTMLELement */) {
 
   todoTarget.isCompleted = false;
   document.dispatchEvent(new Event(RENDER_EVENT));
+  saveData();
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-  const submitForm /* HTMLFormElement */ = document.getElementById('form');
+document.addEventListener("DOMContentLoaded", function () {
+  const submitForm /* HTMLFormElement */ = document.getElementById("form");
 
-  submitForm.addEventListener('submit', function (event) {
+  submitForm.addEventListener("submit", function (event) {
     event.preventDefault();
     addTodo();
   });
 });
 
-
 document.addEventListener(RENDER_EVENT, function () {
-  const uncompletedTODOList = document.getElementById('todos');
-  const listCompleted = document.getElementById('completed-todos');
+  const uncompletedTODOList = document.getElementById("todos");
+  const listCompleted = document.getElementById("completed-todos");
 
   // clearing list item
-  uncompletedTODOList.innerHTML = '';
-  listCompleted.innerHTML = '';
+  uncompletedTODOList.innerHTML = "";
+  listCompleted.innerHTML = "";
 
   for (todoItem of todos) {
     const todoElement = makeTodo(todoItem);
@@ -149,5 +151,48 @@ document.addEventListener(RENDER_EVENT, function () {
     } else {
       uncompletedTODOList.append(todoElement);
     }
+  }
+});
+
+function saveData() {
+  if (isStorageExist()) {
+    const parsed = JSON.stringify(todos);
+    localStorage.setItem(STORAGE_KEY, parsed);
+    document.dispatchEvent(new Event(SAVED_EVENT));
+  }
+}
+
+const SAVED_EVENT = "saved-todo";
+const STORAGE_KEY = "TODO_APPS";
+
+function isStorageExist() /* boolean */ {
+  if (typeof Storage === undefined) {
+    alert("Browser kamu tidak mendukung local storage");
+    return false;
+  }
+  return true;
+}
+
+document.addEventListener(SAVED_EVENT, function () {
+  console.log(localStorage.getItem(STORAGE_KEY));
+});
+
+function loadDataFromStorage() {
+  const serializedData = localStorage.getItem(STORAGE_KEY);
+  let data = JSON.parse(serializedData);
+
+  if (data !== null) {
+    for (const todo of data) {
+      todos.push(todo);
+    }
+  }
+
+  document.dispatchEvent(new Event(RENDER_EVENT));
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  // ...
+  if (isStorageExist()) {
+    loadDataFromStorage();
   }
 });
